@@ -1,4 +1,4 @@
-import CargosDAO from "../Persitencia/cargosDAO.js";
+import CargosDAO from "../Persistencia/cargosDAO.js";
 
 class Cargos {
   #id;
@@ -32,7 +32,9 @@ class Cargos {
     this.#descricao = descricao;
   }
 
-  toJson() {
+
+
+  toJSON() {
     return {
       id: this.#id,
       nome: this.#nome,
@@ -57,6 +59,10 @@ class Cargos {
   async consultar(parametro) {
     const cargoDAO = new CargosDAO();
     return await cargoDAO.consultar(parametro);
+  }
+
+  static async existeCargo(id) {
+    return await CargosDAO.existeCargo(id);
   }
 
   async possuiCargos() {

@@ -7,9 +7,8 @@ const rotaUsuarios = new Router();
 rotaUsuarios.post("/", usuarioCtrl.gravar).
 get("/:termo?", usuarioCtrl.consultar)
 .post('/', usuarioCtrl.gravar)
-.patch('/', usuarioCtrl.atualizar)
-.put('/', usuarioCtrl.atualizar)
-.delete('/', usuarioCtrl.excluir);
+.put('/:id', usuarioCtrl.atualizar)
+.delete('/:id', usuarioCtrl.excluir);
 
 export default rotaUsuarios;
 

@@ -6,6 +6,8 @@ const rotaCargo = new Router();
 
 rotaCargo.post("/", cargosCtrl.gravar).
 get("/:termo?", cargosCtrl.consultar)
-.get("/possui/:id", cargosCtrl.possuiCargos);
+.get("/possui/:id", cargosCtrl.possuiCargos)
+.delete("/:id", cargosCtrl.excluir)
+.put("/:id", cargosCtrl.atualizar);
 
 export default rotaCargo;

@@ -35,6 +35,20 @@ class CargosDAO {
     }
   }
 
+  static async existeCargo(id) {
+    const sql = `SELECT * FROM cargos WHERE c_id = ?;`;
+    const parametros = [id];
+    
+    const conexao = await conectar();
+  
+    const [registros, campos] = await conexao.execute(sql, parametros);
+
+    global.poolConexoes.releaseConnection(conexao);
+    
+    return registros.length > 0;
+    
+  }
+
   async atualizar(cargo) {
     if (cargo instanceof Cargos) {
       const sql = `UPDATE cargos SET c_nome = ?, c_descricao = ? WHERE c_id = ?;`;

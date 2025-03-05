@@ -16,63 +16,60 @@ class UsuariosDAO {
                 u_id INT PRIMARY KEY AUTO_INCREMENT,
                 u_nome VARCHAR(100) NOT NULL,
                 u_email VARCHAR(100) UNIQUE NOT NULL,
-                u_senha TEXT NOT NULL,
+                u_senha TEXT NOT NULL 
               );
             `;
       await conexao.execute(sql);
       global.poolConexoes.releaseConnection(conexao);
     } catch (error) {
-      console.error("Erro ao iniciar banco de dados: " + error);
+      console.error("Erro ao iniciar banco de dados table usuario: " + error);
     }
   }
 
-
-
   async gravar(usuario) {
     if (usuario instanceof Usuarios) {
+
       const conexao = await conectar();
       await conexao.beginTransaction();
-      const sql = `INSERT INTO usuarios (u_nome, u_email, u_senha) 
-                    VALUES (?, ?, ?)`;
-      const parametros = [
-        usuario.nome,
-        usuario.email,
-        usuario.senha
-      ];
-
-      console.log("Parâmetros SQL:", parametros);
-
-      const retorno = await conexao.execute(sql, parametros);
-      usuario.id = retorno[0].insertId;
-      const sql2 = `INSERT INTO usuario_cargo (id_usuario, id_cargo) 
-                        VALUES (?, ?)`;
-      const parametros2 = [
-        usuario.id,
-        usuario.cargo.id
-      ];
       
-      
-      await conexao.commit();
-      //     if (usuario instanceof Usuarios) {
+      try {
+        const sql = `INSERT INTO usuarios (u_nome, u_email, u_senha) 
+                      VALUES (?, ?, ?)`;
+        const parametros = [
+          usuario.nome,
+          usuario.email,
+          usuario.senha
+        ];
+  
+        const retorno = await conexao.execute(sql, parametros);
+        usuario.id = retorno[0].insertId;
+        const sql2 = `INSERT INTO usuario_cargo (u_id, c_id) 
+        VALUES (?, ?)`;
+       
         
-      //     const sql = `INSERT INTO usuarios (u_nome, u_email, u_senha)
-      //                  VALUES (?, ?, ?)`;
-      
-      //     const parametros = [
-        //         usuario.nome,
-        //         usuario.email,
-      //         usuario.senha, // Aqui deve usar o getter
-      //         usuario.cargo ? usuario.cargo.id : null,
-      //     ];
+        console.log("Parâmetros SQL:", parametros);
+        
+        for (const cargo of usuario.cargos) {
+          let parametros2 = [
+            usuario.id,
+            cargo.id
+          ];
+          console.log("Parâmetros SQL:", parametros2);
+          await conexao.execute(sql2, parametros2);
+        }
+  
+        await conexao.commit();
 
-      //     console.log("Parâmetros SQL:", parametros);
+      } catch (error) {
+          await conexao.rollback();
 
-      //     const conexao = await conectar();
-      //     const retorno = await conexao.execute(sql, parametros);
-      //     usuario.id = retorno[0].insertId;
-      //     global.poolConexoes.releaseConnection(conexao);
-      // }
+          throw error;
+      } finally {
+        global.poolConexoes.releaseConnection(conexao);
+      }
     }
+    
+
   }
 
   async atualizar(usuario) {
@@ -85,7 +82,7 @@ class UsuariosDAO {
         usuario.nome,
         usuario.email,
         usuario.senha,
-        usuario.cargo ? usuario.cargo.id : null, // Se não houver cargo, passa null
+        usuario.cargos,
         usuario.id,
       ];
 

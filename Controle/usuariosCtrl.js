@@ -10,33 +10,18 @@ class UsuarioCtrl {
             const nome = dados.nome;
             const email = dados.email;
             const senha = dados.senha;
-            const cargo_id = dados.cargo ? dados.cargo.id : null; // Correção aqui
-            console.log("Dados recebidos:", dados);
-            console.log("Cargo recebido:", dados.cargo);
-            console.log("Cargo ID:", cargo_id);
+            const cargosUsuario = dados.cargos  
+            let cargos = [];
 
-      // const registerUser = async (nome, email, password) => {
-  //   const userExists = await User.getUserByEmail(email);
-  //   if (userExists) {
-  //     throw new Error("Usuário já cadastrado");
-  //   }
+            cargos = cargosUsuario.map(cargoId => new Cargos(cargoId));
 
-  //   const hashedPassword = await bcrypt.hash(password, 10);
-  //   const user = new User({ nome, email, hashedPassword });
-  //   await user.save();
-  //   return user;
-  // };
-  
-            if (nome && email && senha && cargo_id !== undefined) {
-                const cargo = cargo_id > 0 ? new Cargos(cargo_id) : null;
-                console.log("Senha recebida:", senha);
-                const usuario = new Usuarios(0, nome, email, senha, cargo);
+                const usuario = new Usuarios(0, nome, email, senha, cargos);
                 
                 console.log("Dados antes de gravar:", usuario);
                 usuario.gravar().then(() => {
                     resposta.status(200).json({
                         "status": true,
-                        "codigoGerado": usuario.id,
+                        "codigo": usuario.id,
                         "mensagem": "Usuário incluído com sucesso!"
                     });
                 })
@@ -46,33 +31,40 @@ class UsuarioCtrl {
                         "mensagem": "Erro ao registrar o usuário: " + erro.message
                     });
                 });
-            } else {
-                resposta.status(400).json({
-                    "status": false,
-                    "mensagem": "Por favor, forneça os dados corretamente segundo a documentação da API!"
-                });
-            }
+
+           
         } else {
             resposta.status(400).json({
                 "status": false,
-                "mensagem": "Por favor, utilize o método POST para cadastrar um usuário!"
+                "mensagem": "Requisição inválida!"
             });
         }
     }
-    
+    // const registerUser = async (nome, email, password) => {
+//   const userExists = await User.getUserByEmail(email);
+//   if (userExists) {
+//     throw new Error("Usuário já cadastrado");
+//   }
 
+//   const hashedPassword = await bcrypt.hash(password, 10);
+//   const user = new User({ nome, email, hashedPassword });
+//   await user.save();
+//   return user;
+// };
+    
+    
     atualizar(requisicao, resposta) {
         resposta.type('application/json');
-        if ((requisicao.method === 'PUT' || requisicao.method === 'PATCH') && requisicao.is('application/json')) {
+        if ((requisicao.method === 'PUT' ) && requisicao.is('application/json')) {
             const dados = requisicao.body;
-            const id = dados.id;
+            const id = requisicao.params.id;
             const nome = dados.nome;
             const email = dados.email;
             const senha = dados.senha;
-            const cargo_id = dados.cargo.id;
+            const cargos = dados.cargoId;
 
-            if (id && nome && email && senha && cargo_id > 0) {
-                const cargo = new Cargos(cargo_id);
+            if (id && nome && email && senha && cargos) {
+                cargos = cargosUsuario.map(cargoId => new Cargos(cargoId));
                 const usuario = new Usuarios(id, nome, email, senha, cargo);
 
                 usuario.atualizar().then(() => {
@@ -105,9 +97,9 @@ class UsuarioCtrl {
 
     excluir(requisicao, resposta) {
         resposta.type('application/json');
-        if (requisicao.method === 'DELETE' && requisicao.is('application/json')) {
-            const dados = requisicao.body;
+            const dados = requisicao.params;
             const id = dados.id;
+           
             if (id) {
                 const usuario = new Usuarios(id);
 
@@ -130,13 +122,6 @@ class UsuarioCtrl {
                     "mensagem": "Por favor, forneça o ID do usuário!"
                 });
             }
-        }
-        else {
-            resposta.status(400).json({
-                "status": false,
-                "mensagem": "Por favor, utilize o método DELETE para excluir um usuário!"
-            });
-        }
     }
 
     consultar(requisicao, resposta) {
@@ -145,10 +130,9 @@ class UsuarioCtrl {
         if (!termo) {
             termo = "";
         }
-        const usuario = new Usuarios();
         
         if (requisicao.method === "GET") {
-            usuario.consultar(termo).then((listaUsuarios) => {
+            Usuarios.consultar(termo).then((listaUsuarios) => {
                 resposta.json({
                     status: true,
                     usuarios: listaUsuarios.map(usuario => usuario.toJSON())
