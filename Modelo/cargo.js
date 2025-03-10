@@ -65,6 +65,10 @@ class Cargos {
     return await CargosDAO.existeCargo(id);
   }
 
+  static async existeCargoByName(nome) {
+    return await CargosDAO.existeCargoByName(nome);
+  }
+
   async possuiCargos() {
     const cargoDAO = new CargosDAO();
     return await cargoDAO.possuiCargos(this.id);

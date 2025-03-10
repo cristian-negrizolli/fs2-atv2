@@ -1,31 +1,43 @@
-import Cargos from "../Modelo/cargo.js";
+import Cargos from "../Modelo/Cargo.js";
 
 class CargosCtrl {
 
-    gravar(req, res) {
+    async gravar(req, res) {
         res.type("application/json");
-        if(req.method==="POST" && req.is("application/json")) {
-            const dados = req.body;
-            const nome = dados.nome
-            if(nome)
-            {
-                const cargo = new Cargos(0, dados.nome, dados.descricao);
-                cargo.gravar().then(() => {
-                    res.status(200).json({
-                        stutus : true,
-                        "codigoCargo" : cargo.id,
-                        "msg": "Cargo gravado com sucesso"
-                    });
-                }).catch((err) => {
-                    res.status(500).json({erro: err});
-                });
+    
+        try {
+            // Verifica se o cargo já existe no banco
+            if (await Cargos.existeCargoByName(req.body.nome)) {
+                return res.status(400).json({ status: false, erro: "Cargo já cadastrado" });
             }
-            else
-            {
-                res.status(500).json({erro: "Dados inválidos, nome não informado"});
-            } 
+    
+            // Verifica se a requisição é POST e se o conteúdo é JSON
+            if (req.method === "POST" && req.is("application/json")) {
+                const { nome, descricao } = req.body;
+    
+                if (!nome) {
+                    return res.status(400).json({ erro: "Dados inválidos, nome não informado" });
+                }
+    
+                // Cria um novo cargo e tenta salvar no banco
+                const cargo = new Cargos(0, nome, descricao);
+                
+                await cargo.gravar();
+    
+                return res.status(200).json({
+                    status: true,
+                    codigoCargo: cargo.id,
+                    mensagem: "Cargo gravado com sucesso"
+                });
+            } else {
+                return res.status(400).json({ erro: "Requisição inválida" });
+            }
+        } catch (err) {
+            console.error("Erro ao gravar cargo:", err);
+            return res.status(500).json({ erro: "Erro interno do servidor" });
         }
     }
+    
 
     consultar(req, res) {
         res.type("application/json");
@@ -36,10 +48,18 @@ class CargosCtrl {
         if(req.method==="GET") {
             const cargos = new Cargos();
             cargos.consultar(termo).then((listaCargos) => {
-                res.json({
-                    status: true,
-                    listaCargos: listaCargos.map(cargo => cargo.toJSON())
-                  });
+                if(listaCargos.length === 0) {
+                    res.json({
+                        status: false,
+                        erro: "Nenhum cargo encontrado"
+                    })
+                }
+                else{
+                    res.json({
+                        status: true,
+                        listaCargos: listaCargos.map(cargo => cargo.toJSON())
+                      });
+                }
             }).catch((err) => {
                 res.status(500).json({ status: false, erro: err});
             });
@@ -49,30 +69,38 @@ class CargosCtrl {
     async atualizar(req, res) {
         res.type("application/json");
         const id = req.params.id;
-        const nonExists = !await Cargos.existeCargo(id);
-        if(nonExists) {
-            return res.status(404).json({ status: false, erro: "Cargo não encontrado"});
-        }
         const dados = req.body;
         const nome = dados.nome;
         const descricao = dados.descricao;
         const cargos = new Cargos(id, nome, descricao);
-
-        cargos.atualizar().then(() => {
-            res.status(200).json({
-                status: true,
-                mensagem: "Cargo atualizado com sucesso"
+        
+        if(!await Cargos.existeCargo(id)) {
+            return res.status(404).json({ status: false, erro: "Cargo não encontrado"});
+        }
+        else{
+            cargos.atualizar().then(() => {
+                res.status(200).json({
+                    status: true,
+                    mensagem: "Cargo atualizado com sucesso"
+                });
+            }).catch((err) => {
+                res.status(500).json({ status: false, erro: err});
             });
-        }).catch((err) => {
-            res.status(500).json({ status: false, erro: err});
-        });
+        }
     }
 
-    excluir(requisicao, resposta) {
+    async excluir(requisicao, resposta) {
         resposta.type('application/json');
             const dados = requisicao.params;
             const id = dados.id;
-           
+
+            if (!await Cargos.existeCargo(id)) {
+                return resposta.status(404).json({
+                    "status": false,
+                    "mensagem": "Cargo nao encontrado!"
+                });
+            }
+
             if (id) {
                 const cargos = new Cargos(id);
 

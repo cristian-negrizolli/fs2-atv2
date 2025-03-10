@@ -1,5 +1,5 @@
 import conectar from "./conexao.js";
-import Cargos from "../Modelo/cargo.js";
+import Cargos from "../Modelo/Cargo.js";
 
 class CargosDAO {
   constructor() {
@@ -35,19 +35,52 @@ class CargosDAO {
     }
   }
 
+  /**
+   * Verifica se um cargo existe no banco de dados.
+   * 
+   * @param {number|string} id - O id do cargo ou o nome do cargo.
+   * @returns {Promise<boolean>} - Um booleano indicando se o cargo existe no banco de dados.
+   */
   static async existeCargo(id) {
-    const sql = `SELECT * FROM cargos WHERE c_id = ?;`;
-    const parametros = [id];
-    
-    const conexao = await conectar();
-  
-    const [registros, campos] = await conexao.execute(sql, parametros);
+    // Verifica se o ID é um número válido
+    if (!id || isNaN(id)) {
+        console.warn("ID inválido fornecido para existeCargo:", id);
+        return false;
+    }
 
-    global.poolConexoes.releaseConnection(conexao);
-    
-    return registros.length > 0;
-    
+    const sql = `SELECT 1 FROM cargos WHERE c_id = ? LIMIT 1;`; // Melhor performance, sem carregar todos os campos
+    const parametros = [id];
+
+    const conexao = await conectar();
+
+    try {
+        const [registros] = await conexao.execute(sql, parametros);
+        return registros.length > 0;
+    } catch (erro) {
+        console.error("Erro ao verificar existência do cargo (ID: " + id + "):", erro);
+        return false;
+    } finally {
+        conexao.release(); // Libera a conexão corretamente
+    }
+}
+
+
+static async existeCargoByName(nome) {
+  const sql = `SELECT * FROM cargos WHERE c_nome = ?;`; // Definição da query SQL
+  const parametros = [nome];
+
+  const conexao = await conectar();
+
+  try {
+      const [registros] = await conexao.execute(sql, parametros);
+      return registros.length > 0;
+  } catch (erro) {
+      console.error("Erro ao verificar cargo por nome:", erro);
+      return false;
+  } finally {
+      global.poolConexoes.releaseConnection(conexao);
   }
+}
 
   async atualizar(cargo) {
     if (cargo instanceof Cargos) {

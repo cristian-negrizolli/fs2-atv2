@@ -1,5 +1,5 @@
 import Usuarios from "../Modelo/usuario.js";
-import Cargos from "../Modelo/cargo.js";
+import Cargos from "../Modelo/Cargo.js";
 
 class UsuarioCtrl {
 
@@ -40,31 +40,27 @@ class UsuarioCtrl {
             });
         }
     }
-    // const registerUser = async (nome, email, password) => {
-//   const userExists = await User.getUserByEmail(email);
-//   if (userExists) {
-//     throw new Error("Usuário já cadastrado");
-//   }
 
-//   const hashedPassword = await bcrypt.hash(password, 10);
-//   const user = new User({ nome, email, hashedPassword });
-//   await user.save();
-//   return user;
-// };
-    
-    
-    atualizar(requisicao, resposta) {
+    async atualizar(requisicao, resposta) {
         resposta.type('application/json');
         if ((requisicao.method === 'PUT' ) && requisicao.is('application/json')) {
-            const dados = requisicao.body;
             const id = requisicao.params.id;
+            const nonExists = !await Usuarios.existeUsuario(id);
+            if (nonExists) {
+                return resposta.status(404).json({
+                    "status": false,
+                    "mensagem": "Usuário não encontrado!"
+                });
+            }
+
+            const dados = requisicao.body;
             const nome = dados.nome;
             const email = dados.email;
             const senha = dados.senha;
-            const cargos = dados.cargoId;
+            const cargos = dados.cargos;
 
-            if (id && nome && email && senha && cargos) {
-                cargos = cargosUsuario.map(cargoId => new Cargos(cargoId));
+            
+                const cargo = cargos.map(cargos => new Cargos(cargos));
                 const usuario = new Usuarios(id, nome, email, senha, cargo);
 
                 usuario.atualizar().then(() => {
@@ -72,21 +68,14 @@ class UsuarioCtrl {
                         "status": true,
                         "mensagem": "Usuário atualizado com sucesso!"
                     });
-                })
-                    .catch((erro) => {
+                }).catch((erro) => {
                         resposta.status(500).json({
                             "status": false,
                             "mensagem": "Erro ao atualizar o usuário: " + erro.message
                         });
                     });
             }
-            else {
-                resposta.status(400).json({
-                    "status": false,
-                    "mensagem": "Por favor, forneça todos os dados corretamente segundo a documentação da API!"
-                });
-            }
-        }
+            
         else {
             resposta.status(400).json({
                 "status": false,
@@ -95,27 +84,34 @@ class UsuarioCtrl {
         }
     }
 
-    excluir(requisicao, resposta) {
+    async excluir(requisicao, resposta) {
         resposta.type('application/json');
             const dados = requisicao.params;
             const id = dados.id;
            
             if (id) {
                 const usuario = new Usuarios(id);
-
-                usuario.excluir().then(() => {
-                    resposta.status(200).json({
-                        "status": true,
-                        "mensagem": "Usuário excluído com sucesso!"
+                if (!await Usuarios.existeUsuario(id)) {
+                    return resposta.status(404).json({
+                        "status": false,
+                        "mensagem": "Usuário não encontrado!"
                     });
-                })
+                }
+                else{
+                    usuario.excluir().then(() => {
+                        resposta.status(200).json({
+                            "status": true,
+                            "mensagem": "Usuário excluído com sucesso!"
+                        });
+                    })
                     .catch((erro) => {
                         resposta.status(500).json({
                             "status": false,
                             "mensagem": "Erro ao excluir o usuário: " + erro.message
                         });
                     });
-            }
+                }
+                    }
             else {
                 resposta.status(400).json({
                     "status": false,
@@ -133,10 +129,17 @@ class UsuarioCtrl {
         
         if (requisicao.method === "GET") {
             Usuarios.consultar(termo).then((listaUsuarios) => {
-                resposta.json({
-                    status: true,
-                    usuarios: listaUsuarios.map(usuario => usuario.toJSON())
-                  });
+                if (listaUsuarios.length === 0) {
+                    resposta.json({
+                        status: false,
+                        mensagem: "Nenhum usuário encontrado!"
+                    });
+                }else{
+                    resposta.json({
+                        status: true,
+                        usuarios: listaUsuarios.map(usuario => usuario.toJSON())
+                      });
+                }
             })
                 .catch((erro) => {
                     resposta.json({

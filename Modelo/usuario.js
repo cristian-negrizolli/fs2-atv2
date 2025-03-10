@@ -8,7 +8,7 @@ class Usuarios {
   #senha;
   #cargos;
 
-  constructor(id = 0, nome, email, senha, cargos) {
+  constructor(id = 0, nome, email, senha, cargos =[]) {
     this.#id = id;
     this.#nome = nome;
     this.#email = email;
@@ -34,7 +34,7 @@ class Usuarios {
 
   get cargos() { return this.#cargos; }
 
-  set cargos(novoCargo) { this.#cargos = novosCargos; }
+  set cargos(novosCargos) { this.#cargos = novosCargos; }
 
   toJSON() {
     return {
@@ -55,6 +55,10 @@ class Usuarios {
     await usuDAO.excluir(this);
   }
 
+  static async existeUsuario(id) {
+    return await UsuarioDAO.existeUsuario(id);
+  }
+
   async atualizar() {
     const usuDAO = new UsuarioDAO();
     await usuDAO.atualizar(this);
@@ -64,6 +68,11 @@ class Usuarios {
     const usuDAO = new UsuarioDAO();
     return await usuDAO.consultar(termo);
   }
+
+  static async getUserByEmail(email) {
+    return await UsuarioDAO.getUserByEmail(email);
+  }
+
 }
 
 export default Usuarios;
